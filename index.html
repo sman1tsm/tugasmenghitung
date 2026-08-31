@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Penugasan Pemrograman Siswa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS (XLSX) Library -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .font-mono-code {
+            font-family: 'Fira Code', monospace;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2 rounded-lg backdrop-blur-sm">
+                    <i data-lucide="code-2" class="w-6 h-6 text-indigo-200"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">EduCode Task Hub</h1>
+                    <p class="text-xs text-indigo-200">Portal Tugas Pemrograman & Manajemen Perhitungan</p>
+                </div>
+            </div>
+
+            <!-- Role Selector Tabs -->
+            <div class="flex bg-indigo-800/60 p-1 rounded-xl border border-indigo-500/30">
+                <button id="btn-tab-siswa" onclick="switchRole('siswa')" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 bg-white text-indigo-700 shadow-sm">
+                    <i data-lucide="user" class="w-4 h-4"></i>
+                    <span>Portal Siswa</span>
+                </button>
+                <button id="btn-tab-guru" onclick="switchRole('guru')" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 text-indigo-100 hover:text-white">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>Panel Guru</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- ========================================== -->
+        <!-- VIEW SISWA -->
+        <!-- ========================================== -->
+        <section id="view-siswa" class="space-y-6">
+            
+            <!-- Student Login / Unique Code Input -->
+            <div id="card-search-code" class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200 max-w-2xl mx-auto text-center space-y-4">
+                <div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto text-indigo-600">
+                    <i data-lucide="key-round" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Masukkan Kode Unik Anda</h2>
+                    <p class="text-sm text-slate-500 mt-1">Gunakan kode unik dari guru</p>
+                </div>
+                
+                <form onsubmit="cariTugasSiswa(event)" class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-2">
+                    <input type="text" id="input-kode-unik" placeholder="" required
+                        class="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-center text-lg uppercase tracking-wider outline-none transition">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-indigo-200 transition flex items-center justify-center space-x-2">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                        <span>Cari Tugas</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Student Task Workspace (Hidden by Default) -->
+            <div id="workspace-siswa" class="hidden space-y-6">
+                <!-- Banner Info Siswa & Tugas -->
+                <div class="bg-gradient-to-r from-indigo-900 to-indigo-700 text-white p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-indigo-500/30 text-indigo-200 text-xs font-mono px-2.5 py-1 rounded-md border border-indigo-400/30">
+                                KODE: <span id="disp-kode" class="font-bold text-white"></span>
+                            </span>
+                            <span id="disp-kelas" class="bg-emerald-500/20 text-emerald-300 text-xs font-semibold px-2.5 py-1 rounded-md border border-emerald-500/30">
+                                KELAS
+                            </span>
+                        </div>
+                        <h2 id="disp-nama-siswa" class="text-2xl font-bold mt-2">Nama Siswa</h2>
+                        <p class="text-indigo-200 text-sm">Silakan selesaikan tugas pembuatan program berikut dan kumpulkan kodenya.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Lembar Soal Tugas (Left Column) -->
+                    <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
+                        <div class="flex items-center space-x-2 text-indigo-600 font-semibold border-b border-slate-100 pb-3">
+                            <i data-lucide="file-text" class="w-5 h-5"></i>
+                            <h3 class="text-base">Detail Soal Pemrograman</h3>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs font-medium text-slate-400 uppercase tracking-wider">Topik Rumus</label>
+                                <div id="disp-nama-rumus" class="text-lg font-bold text-slate-800"></div>
+                                <div class="flex space-x-2 mt-1">
+                                    <span id="disp-kategori" class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-medium"></span>
+                                    <span id="disp-jenis" class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-medium"></span>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+                                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Persamaan / Formula:</span>
+                                <div id="disp-rumus" class="font-mono text-base font-bold text-indigo-700 bg-white p-2.5 rounded-lg border border-slate-200"></div>
+                                <div class="text-xs text-slate-600 mt-2">
+                                    <span class="font-semibold text-slate-700">Keterangan Simbol:</span>
+                                    <p id="disp-keterangan" class="italic mt-0.5 text-slate-600"></p>
+                                </div>
+                            </div>
+
+                            <!-- Instruksi Tugas -->
+                            <div class="space-y-2">
+                                <h4 class="text-xs font-semibold text-slate-700 uppercase tracking-wide">Instruksi Pengerjaan:</h4>
+                                <ul class="text-xs text-slate-600 space-y-1.5 list-disc list-inside">
+                                    <li>Buatlah kode program.</li>
+                                    <li>Program harus meminta input variabel sesuai keterangan rumus di atas.</li>
+                                    <li>Hitung dan tampilkan hasil kalkulasi rumus dengan benar.</li>
+                                    <li>Salin dan tempelkan kode lengkap Anda pada editor di samping.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editor Pengumpulan Kode (Right Column) -->
+                    <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 flex flex-col">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center space-x-2 text-indigo-600 font-semibold">
+                                <i data-lucide="code" class="w-5 h-5"></i>
+                                <h3>Editor Pengumpulan Kode Program</h3>
+                            </div>
+                            <!-- Bahasa Selector -->
+                            <select id="select-bahasa" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:ring-1 focus:ring-indigo-500 outline-none">
+                                <option value="Python">Bahasa: Python</option>
+                                <option value="C++">Bahasa: C++</option>
+                                <option value="Java">Bahasa: Java</option>
+                                <option value="Pascal">Bahasa: Pascal / Delphi</option>
+                                <option value="JavaScript">Bahasa: JavaScript</option>
+                                <option value="Lainnya">Bahasa: Lainnya</option>
+                            </select>
+                        </div>
+
+                        <div class="flex-1 flex flex-col space-y-2">
+                            <label for="input-kode-program" class="text-xs font-medium text-slate-500">
+                                Tuliskan atau tempelkan (paste) source code program Anda di sini:
+                            </label>
+                            <textarea id="input-kode-program" rows="14" placeholder="# Tuliskan kode program Anda di sini...&#10;# Contoh (Python):&#10;s = float(input('Masukkan panjang rusuk (s): '))&#10;volume = s ** 3&#10;print(f'Volume Kubus: {volume}')"
+                                class="w-full font-mono-code text-sm p-4 bg-slate-900 text-slate-100 rounded-xl border border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none resize-y leading-relaxed"></textarea>
+                        </div>
+
+                        <!-- Status & Tombol Kirim -->
+                        <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div id="status-pengumpulan" class="text-xs text-slate-500 flex items-center space-x-1">
+                                <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                                <span>Belum dikumpulkan</span>
+                            </div>
+                            <button onclick="kumpulkanTugas()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-2.5 rounded-xl shadow-md shadow-emerald-200 transition flex items-center justify-center space-x-2">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>Kumpulkan Kode</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- VIEW GURU / ADMIN -->
+        <!-- ========================================== -->
+        <section id="view-guru" class="hidden space-y-6">
+
+            <!-- Control Bar / Navigation -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Panel Kelola Tugas Guru</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Unggah data Excel dari spreadsheet Anda untuk mendistribusikan tugas siswa secara otomatis.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="switchGuruSubTab('data')" id="btn-subtab-data" class="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center space-x-1.5">
+                        <i data-lucide="table" class="w-4 h-4"></i>
+                        <span>Data Soal & Siswa</span>
+                    </button>
+                    <button onclick="switchGuruSubTab('submissions')" id="btn-subtab-submissions" class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5">
+                        <i data-lucide="inbox" class="w-4 h-4"></i>
+                        <span>Pengumpulan Kode</span>
+                        <span id="badge-submission-count" class="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: DATA EXCEL MANAGER -->
+            <div id="guru-subtab-data" class="space-y-6">
+                <!-- Dropzone Upload Excel -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-2 text-indigo-700 font-semibold text-sm">
+                            <i data-lucide="file-spreadsheets" class="w-5 h-5"></i>
+                            <span>Import File Excel (.xlsx / .xls / .csv)</span>
+                        </div>
+                        <span class="text-xs text-slate-400">Dukungan format persis seperti screenshot</span>
+                    </div>
+
+                    <div class="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50 hover:bg-indigo-50/40 rounded-xl p-8 text-center transition cursor-pointer relative"
+                         onclick="document.getElementById('input-excel-file').click()">
+                        <input type="file" id="input-excel-file" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleFileUpload(event)">
+                        <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                        </div>
+                        <h4 class="text-sm font-semibold text-slate-700">Klik di sini untuk memilih file Excel</h4>
+                        <p class="text-xs text-slate-400 mt-1">Aplikasi akan otomatis mengurai kolom: Nama Rumus, Rumus, Nama Siswa, Kelas, kode_unik, dll.</p>
+                    </div>
+                </div>
+
+                <!-- Table Preview Data -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center space-x-3">
+                            <h3 class="font-bold text-slate-800">Daftar Penugasan Siswa</h3>
+                            <span id="total-rows-badge" class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">17 Data</span>
+                        </div>
+                        <div class="w-full sm:w-72 relative">
+                            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="input-search-table" onkeyup="filterTableGuru()" placeholder="Cari nama, kode, atau rumus..."
+                                class="w-full pl-9 pr-4 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto max-h-[500px]">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 uppercase font-semibold border-b border-slate-200 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-4 py-3">No</th>
+                                    <th class="px-4 py-3">Kode Unik</th>
+                                    <th class="px-4 py-3">Nama Siswa</th>
+                                    <th class="px-4 py-3">Kelas</th>
+                                    <th class="px-4 py-3">Nama Rumus</th>
+                                    <th class="px-4 py-3">Kategori</th>
+                                    <th class="px-4 py-3">Jenis</th>
+                                    <th class="px-4 py-3 font-mono">Formula</th>
+                                    <th class="px-4 py-3">Keterangan Simbol</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-guru-data" class="divide-y divide-slate-100">
+                                <!-- Data rows rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: STUDENT SUBMISSIONS -->
+            <div id="guru-subtab-submissions" class="hidden space-y-6">
+                <!-- Google Sheets Webhook Integration Box -->
+                <div class="bg-indigo-50/70 border border-indigo-200 p-5 rounded-2xl space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 text-indigo-900 font-bold text-sm">
+                            <i data-lucide="sheet" class="w-5 h-5 text-indigo-600"></i>
+                            <span>Integrasi Langsung Google Sheets (Spreadsheet Online)</span>
+                        </div>
+                        <button onclick="toggleScriptHelp()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline">
+                            Cara Buat Webhook Google Sheets
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-600">Masukkan Webhook Web App URL dari Google Apps Script agar setiap pengumpulan siswa otomatis masuk ke Spreadsheet Google Anda secara real-time.</p>
+                    <div class="flex gap-2">
+                        <input type="url" id="input-webhook-url" placeholder="https://script.google.com/macros/s/.../exec"
+                            class="flex-1 px-3 py-2 text-xs border border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                        <button onclick="saveWebhookUrl()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center space-x-1">
+                            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                            <span>Simpan URL</span>
+                        </button>
+                    </div>
+                    <!-- Modal/Accordion Panduan Webhook -->
+                    <div id="box-script-help" class="hidden text-xs bg-white p-4 rounded-xl border border-indigo-100 space-y-2 mt-2">
+                        <p class="font-bold text-indigo-950">Langkah Membuat Webhook Google Sheets:</p>
+                        <ol class="list-decimal list-inside space-y-1 text-slate-600">
+                            <li>Buka Google Sheets baru &gt; Menu <b>Ekstensi</b> &gt; <b>Apps Script</b>.</li>
+                            <li>Hapus isi script lalu tempelkan kode berikut:
+                                <pre class="bg-slate-900 text-emerald-400 p-2.5 rounded-lg font-mono text-[11px] mt-1 overflow-x-auto">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Waktu", "Kode Unik", "Nama Siswa", "Kelas", "Nama Rumus", "Bahasa", "Kode Program"]);
+  }
+  sheet.appendRow([data.waktu, data.kode_unik, data.nama_siswa, data.kelas, data.nama_rumus, data.bahasa, data.kode_program]);
+  return ContentService.createTextOutput("OK");
+}</pre>
+                            </li>
+                            <li>Klik <b>Terapkan (Deploy)</b> &gt; <b>Penempatan baru</b> &gt; Jenis: <i>Aplikasi Web</i> &gt; Siapa yang memiliki akses: <b>Siapa saja (Anyone)</b> &gt; Deploy.</li>
+                            <li>Salin URL Aplikasi Web lalu tempelkan pada kolom di atas!</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h3 class="font-bold text-slate-800">Daftar Kode Program Terkumpul</h3>
+                        <p class="text-xs text-slate-500">Tinjau kode program yang dikirimkan oleh siswa berdasarkan kode unik mereka.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="exportSubmissionsXLSX()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 shadow-sm">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>Unduh Excel (.xlsx)</span>
+                        </button>
+                        <button onclick="exportSubmissionsCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-4 py-2 rounded-xl transition flex items-center space-x-1.5 shadow-sm">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Ekspor CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="container-submissions-list" class="space-y-4">
+                    <!-- Submission Cards Rendered via JS -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            &copy; Sistem Otomasi Penugasan & Editor Kode Siswa. Format Terintegrasi Spreadsheet.
+        </div>
+    </footer>
+
+    <!-- Notification Modal Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center space-x-3">
+        <i id="toast-icon" data-lucide="check-circle" class="w-5 h-5 text-emerald-400"></i>
+        <span id="toast-message" class="text-sm">Notifikasi</span>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        // Sample Default Dataset from the uploaded image screenshot (1.png)
+        let masterData = [
+            { no: 1, namaRumus: "Volume Kubus", kategori: "Bangun Ruang", jenis: "Volume", rumus: "s^3", keterangan: "s = panjang rusuk", siswa: "Agi Mochammad", kelas: "X9", kode_unik: "x5s" },
+            { no: 2, namaRumus: "Luas Permukaan Kubus", kategori: "Bangun Ruang", jenis: "Luas Permukaan", rumus: "6 * s^2", keterangan: "s = panjang rusuk", siswa: "Aisyah Kamilia", kelas: "X9", kode_unik: "x13s" },
+            { no: 3, namaRumus: "Volume Balok", kategori: "Bangun Ruang", jenis: "Volume", rumus: "p * l * t", keterangan: "p = panjang, l = lebar, t = tinggi", siswa: "Anindya Rizqia", kelas: "X9", kode_unik: "x10s" },
+            { no: 4, namaRumus: "Luas Permukaan Balok", kategori: "Bangun Ruang", jenis: "Luas Permukaan", rumus: "2 * (p*l + p*t + l*t)", keterangan: "p = panjang, l = lebar, t = tinggi", siswa: "Az - Zahra Nur", kelas: "X9", kode_unik: "x8s" },
+            { no: 5, namaRumus: "Volume Tabung", kategori: "Bangun Ruang", jenis: "Volume", rumus: "pi() * r^2 * t", keterangan: "r = jari-jari alas, t = tinggi tabung", siswa: "Dhafin Tsabitul", kelas: "X9", kode_unik: "x25s" },
+            { no: 6, namaRumus: "Luas Permukaan Tabung", kategori: "Bangun Ruang", jenis: "Luas Permukaan", rumus: "2 * pi() * r * (r + t)", keterangan: "r = jari-jari alas, t = tinggi tabung", siswa: "Haliya Surya S", kelas: "X9", kode_unik: "x31s" },
+            { no: 7, namaRumus: "Volume Kerucut", kategori: "Bangun Ruang", jenis: "Volume", rumus: "(1/3) * pi() * r^2 * t", keterangan: "r = jari-jari alas, t = tinggi kerucut", siswa: "Hamas Arif Ma", kelas: "X9", kode_unik: "x16s" },
+            { no: 8, namaRumus: "Luas Permukaan Kerucut", kategori: "Bangun Ruang", jenis: "Luas Permukaan", rumus: "pi() * r * (r + s)", keterangan: "r = jari-jari alas, s = garis pelukis", siswa: "Kaviandra Mika", kelas: "X9", kode_unik: "x7s" },
+            { no: 9, namaRumus: "Volume Bola", kategori: "Bangun Ruang", jenis: "Volume", rumus: "(4/3) * pi() * r^3", keterangan: "r = jari-jari bola", siswa: "Kayla Angelina", kelas: "X9", kode_unik: "x18s" },
+            { no: 10, namaRumus: "Luas Permukaan Bola", kategori: "Bangun Ruang", jenis: "Luas Permukaan", rumus: "4 * pi() * r^2", keterangan: "r = jari-jari bola", siswa: "Keisha Zakiah", kelas: "X9", kode_unik: "x22s" },
+            { no: 11, namaRumus: "Volume Prisma", kategori: "Bangun Ruang", jenis: "Volume", rumus: "Luas Alas * t", keterangan: "t = tinggi prisma", siswa: "M. Faris Azfar", kelas: "X9", kode_unik: "x20s" },
+            { no: 12, namaRumus: "Luas Permukaan Prisma", kategori: "Bangun Ruang", jenis: "Luas Permukaan", rumus: "(2 * Luas Alas) + (Keliling Alas * t)", keterangan: "t = tinggi prisma", siswa: "Maula Qolbu S", kelas: "X9", kode_unik: "x9s" },
+            { no: 13, namaRumus: "Volume Limas", kategori: "Bangun Ruang", jenis: "Volume", rumus: "(1/3) * Luas Alas * t", keterangan: "t = tinggi limas", siswa: "Mufida Aydin V", kelas: "X9", kode_unik: "x16s" },
+            { no: 14, namaRumus: "Keliling Persegi Panjang", kategori: "Bangun Datar", jenis: "Keliling", rumus: "2 * (p + l)", keterangan: "p = panjang, l = lebar", siswa: "Muhammad Ha", kelas: "X9", kode_unik: "x13gh" },
+            { no: 15, namaRumus: "Luas Segitiga", kategori: "Bangun Datar", jenis: "Luas", rumus: "(1/2) * a * t", keterangan: "a = alas, t = tinggi", siswa: "Muhammad Ra", kelas: "X9", kode_unik: "x16gh" },
+            { no: 16, namaRumus: "Luas Lingkaran", kategori: "Bangun Datar", jenis: "Luas", rumus: "pi() * r^2", keterangan: "r = jari-jari", siswa: "Muhammad Re", kelas: "X9", kode_unik: "x9gh" },
+            { no: 17, namaRumus: "Keliling Lingkaran", kategori: "Bangun Datar", jenis: "Keliling", rumus: "2 * pi() * r", keterangan: "r = jari-jari", siswa: "Muhammad Wi", kelas: "X9", kode_unik: "x23gh" }
+        ];
+
+        // Store active student session and list of code submissions
+        let currentStudentData = null;
+        let submissions = [];
+        let webhookUrl = 'https://script.google.com/a/macros/guru.sma.belajar.id/s/AKfycbw_g_vEAsYYpaOjA-T9rO_yfqEoI3N4_7iEWqQWXOmkUFAAeoyK4P1BUJ-Jh9gKSzf5UA/exec';
+
+        // App Initialization
+        window.onload = function() {
+            lucide.createIcons();
+            renderGuruTable();
+            renderSubmissionsList();
+        };
+
+        // Switch Role UI View
+        function switchRole(role) {
+            const btnSiswa = document.getElementById('btn-tab-siswa');
+            const btnGuru = document.getElementById('btn-tab-guru');
+            const viewSiswa = document.getElementById('view-siswa');
+            const viewGuru = document.getElementById('view-guru');
+
+            if (role === 'siswa') {
+                btnSiswa.className = "px-4 py-1.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 bg-white text-indigo-700 shadow-sm";
+                btnGuru.className = "px-4 py-1.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 text-indigo-100 hover:text-white";
+                viewSiswa.classList.remove('hidden');
+                viewGuru.classList.add('hidden');
+            } else {
+                btnGuru.className = "px-4 py-1.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 bg-white text-indigo-700 shadow-sm";
+                btnSiswa.className = "px-4 py-1.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 text-indigo-100 hover:text-white";
+                viewGuru.classList.remove('hidden');
+                viewSiswa.classList.add('hidden');
+            }
+        }
+
+        // Search Student Task by Unique Code
+        function cariTugasSiswa(e) {
+            e.preventDefault();
+            const inputCode = document.getElementById('input-kode-unik').value.trim().toLowerCase();
+            
+            if (!inputCode) {
+                showToast('Masukkan kode unik terlebih dahulu!', 'alert-circle');
+                return;
+            }
+
+            const found = masterData.find(item => String(item.kode_unik).trim().toLowerCase() === inputCode);
+
+            if (found) {
+                currentStudentData = found;
+                document.getElementById('card-search-code').classList.add('hidden');
+                document.getElementById('workspace-siswa').classList.remove('hidden');
+
+                // Render Student Details
+                document.getElementById('disp-kode').textContent = found.kode_unik;
+                document.getElementById('disp-kelas').textContent = found.kelas || 'X9';
+                document.getElementById('disp-nama-siswa').textContent = found.siswa || found.nama_siswa || 'Siswa';
+                document.getElementById('disp-nama-rumus').textContent = found.namaRumus || found.nama_rumus || '-';
+                document.getElementById('disp-kategori').textContent = found.kategori || 'Bangun Ruang/Datar';
+                document.getElementById('disp-jenis').textContent = found.jenis || found.jenis_perhitungan || 'Kalkulasi';
+                document.getElementById('disp-rumus').textContent = found.rumus || '-';
+                document.getElementById('disp-keterangan').textContent = found.keterangan || found.keterangan_simbol || '-';
+
+                // Check existing submission
+                const existingSub = submissions.find(s => s.kode_unik === found.kode_unik);
+                const statusElem = document.getElementById('status-pengumpulan');
+                const codeTextarea = document.getElementById('input-kode-program');
+
+                if (existingSub) {
+                    codeTextarea.value = existingSub.kode_program;
+                    document.getElementById('select-bahasa').value = existingSub.bahasa;
+                    statusElem.innerHTML = `
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                        <span class="text-emerald-700 font-semibold">Tugas Sudah Dikumpulkan (${existingSub.waktu})</span>
+                    `;
+                } else {
+                    codeTextarea.value = '';
+                    statusElem.innerHTML = `
+                        <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                        <span>Belum dikumpulkan</span>
+                    `;
+                }
+                lucide.createIcons();
+                showToast(`Selamat datang, ${found.siswa}!`, 'check-circle');
+            } else {
+                showToast('Kode unik tidak ditemukan! Periksa kembali kode Anda.', 'alert-circle');
+            }
+        }
+
+        function keluarSiswa() {
+            currentStudentData = null;
+            document.getElementById('card-search-code').classList.remove('hidden');
+            document.getElementById('workspace-siswa').classList.add('hidden');
+            document.getElementById('input-kode-unik').value = '';
+        }
+
+        // Submit Student Code Task
+        async function kumpulkanTugas() {
+            if (!currentStudentData) return;
+
+            const codeText = document.getElementById('input-kode-program').value.trim();
+            const bahasa = document.getElementById('select-bahasa').value;
+
+            if (!codeText) {
+                showToast('Tuliskan kode program Anda sebelum mengumpulkan!', 'alert-circle');
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+            // Save or Update submission
+            const existingIdx = submissions.findIndex(s => s.kode_unik === currentStudentData.kode_unik);
+            const subData = {
+                kode_unik: currentStudentData.kode_unik,
+                nama_siswa: currentStudentData.siswa || currentStudentData.nama_siswa,
+                kelas: currentStudentData.kelas,
+                nama_rumus: currentStudentData.namaRumus || currentStudentData.nama_rumus,
+                rumus: currentStudentData.rumus,
+                bahasa: bahasa,
+                kode_program: codeText,
+                waktu: timeStr
+            };
+
+            if (existingIdx >= 0) {
+                submissions[existingIdx] = subData;
+            } else {
+                submissions.push(subData);
+            }
+
+            // If Webhook URL is set, send data directly to Google Spreadsheet
+            if (webhookUrl) {
+                try {
+                    showToast('Mengirim tugas ke Google Spreadsheet...', 'clock');
+                    await fetch(webhookUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(subData)
+                    });
+                } catch (err) {
+                    console.error('Webhook error:', err);
+                }
+            }
+
+            // Update Status UI
+            const statusElem = document.getElementById('status-pengumpulan');
+            statusElem.innerHTML = `
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+                <span class="text-emerald-700 font-semibold">Tugas Berhasil Dikumpulkan ${webhookUrl ? '& dikirim ke Spreadsheet' : ''} (${timeStr})</span>
+            `;
+
+            document.getElementById('badge-submission-count').textContent = submissions.length;
+            renderSubmissionsList();
+            lucide.createIcons();
+
+            showToast('Kode program berhasil dikumpulkan & tersimpan!', 'check-circle');
+        }
+
+        // Parse Excel File uploaded by Teacher
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    if (jsonData.length === 0) {
+                        showToast('File Excel kosong atau tidak terbaca!', 'alert-circle');
+                        return;
+                    }
+
+                    // Format and map data flexible to screenshot headers
+                    masterData = jsonData.map((row, idx) => {
+                        return {
+                            no: row['No.'] || row['No'] || idx + 1,
+                            namaRumus: row['Nama Rumus'] || row['Nama_Rumus'] || row['Rumus Name'] || '-',
+                            kategori: row['Kategori'] || '-',
+                            jenis: row['Jenis Perhitungan'] || row['Jenis_Perhitungan'] || '-',
+                            rumus: row['Rumus'] || '-',
+                            keterangan: row['Keterangan Simbol'] || row['Keterangan_Simbol'] || row['Keterangan'] || '-',
+                            siswa: row['Nama Siswa'] || row['Nama_Siswa'] || row['Siswa'] || '-',
+                            kelas: row['Kelas'] || '-',
+                            kode_unik: String(row['kode_unik'] || row['Kode Unik'] || row['kode'] || `x${idx+1}`).trim()
+                        };
+                    });
+
+                    renderGuruTable();
+                    showToast(`Berhasil mengimpor ${masterData.length} data siswa dari Excel!`, 'check-circle');
+                } catch (err) {
+                    console.error(err);
+                    showToast('Gagal mengurai file Excel. Pastikan format file sesuai.', 'alert-circle');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Render Teacher Master Data Table
+        function renderGuruTable() {
+            const tbody = document.getElementById('tbody-guru-data');
+            tbody.innerHTML = '';
+
+            document.getElementById('total-rows-badge').textContent = `${masterData.length} Data`;
+
+            masterData.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-slate-400 font-mono">${item.no || index + 1}</td>
+                    <td class="px-4 py-3 font-mono font-bold text-indigo-600 bg-indigo-50/50 rounded">${item.kode_unik}</td>
+                    <td class="px-4 py-3 font-semibold text-slate-800">${item.siswa || item.nama_siswa}</td>
+                    <td class="px-4 py-3">${item.kelas}</td>
+                    <td class="px-4 py-3 font-medium text-slate-700">${item.namaRumus || item.nama_rumus}</td>
+                    <td class="px-4 py-3 text-slate-500">${item.kategori}</td>
+                    <td class="px-4 py-3 text-slate-500">${item.jenis}</td>
+                    <td class="px-4 py-3 font-mono text-indigo-700 bg-slate-50">${item.rumus}</td>
+                    <td class="px-4 py-3 text-slate-500 max-w-xs truncate" title="${item.keterangan}">${item.keterangan}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Filter Guru Table Data
+        function filterTableGuru() {
+            const query = document.getElementById('input-search-table').value.toLowerCase();
+            const rows = document.querySelectorAll('#tbody-guru-data tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Switch Subtab in Panel Guru
+        function switchGuruSubTab(subtab) {
+            const btnData = document.getElementById('btn-subtab-data');
+            const btnSubmissions = document.getElementById('btn-subtab-submissions');
+            const tabData = document.getElementById('guru-subtab-data');
+            const tabSubmissions = document.getElementById('guru-subtab-submissions');
+
+            if (subtab === 'data') {
+                btnData.className = "px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center space-x-1.5";
+                btnSubmissions.className = "px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5";
+                tabData.classList.remove('hidden');
+                tabSubmissions.classList.add('hidden');
+            } else {
+                btnSubmissions.className = "px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center space-x-1.5";
+                btnData.className = "px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5";
+                tabSubmissions.classList.remove('hidden');
+                tabData.classList.add('hidden');
+            }
+        }
+
+        // Render Submissions List for Teacher Review
+        function renderSubmissionsList() {
+            const container = document.getElementById('container-submissions-list');
+            container.innerHTML = '';
+
+            if (submissions.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-12 text-center rounded-2xl border border-slate-200 text-slate-400 space-y-2">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300"></i>
+                        <p class="text-sm font-medium">Belum ada siswa yang mengumpulkan kode program.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            submissions.forEach(sub => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4";
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                        <div class="flex items-center space-x-3">
+                            <span class="bg-indigo-100 text-indigo-700 font-mono font-bold text-xs px-2.5 py-1 rounded-lg">
+                                ${sub.kode_unik}
+                            </span>
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-base">${sub.nama_siswa} (${sub.kelas})</h4>
+                                <p class="text-xs text-slate-500">Tugas: <span class="font-semibold text-slate-700">${sub.nama_rumus}</span> (${sub.rumus})</p>
+                            </div>
+                        </div>
+                        <div class="text-right flex items-center space-x-2">
+                            <span class="bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-md font-semibold">${sub.bahasa}</span>
+                            <span class="text-xs text-slate-400">${sub.waktu}</span>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <div class="absolute top-2 right-2 text-xs text-slate-400 font-mono bg-slate-800/80 text-white px-2 py-0.5 rounded">Source Code</div>
+                        <pre class="bg-slate-900 text-emerald-400 p-4 rounded-xl font-mono-code text-xs overflow-x-auto max-h-60 leading-relaxed">${escapeHtml(sub.kode_program)}</pre>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // Helper to export submissions to XLSX Excel Spreadsheet
+        function exportSubmissionsXLSX() {
+            if (submissions.length === 0) {
+                showToast('Belum ada data pengumpulan untuk diekspor!', 'alert-circle');
+                return;
+            }
+
+            const excelData = submissions.map(s => ({
+                "Waktu Pengumpulan": s.waktu,
+                "Kode Unik": s.kode_unik,
+                "Nama Siswa": s.nama_siswa,
+                "Kelas": s.kelas,
+                "Nama Rumus": s.nama_rumus,
+                "Formula": s.rumus,
+                "Bahasa Pemrograman": s.bahasa,
+                "Kode Program": s.kode_program
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Pengumpulan Kode");
+            XLSX.writeFile(workbook, "Pengumpulan_Kode_Siswa_Spreadsheet.xlsx");
+
+            showToast('File Excel Spreadsheet (.xlsx) berhasil diunduh!', 'check-circle');
+        }
+
+        function saveWebhookUrl() {
+            const url = document.getElementById('input-webhook-url').value.trim();
+            webhookUrl = url;
+            if (url) {
+                showToast('URL Google Sheets Webhook berhasil disimpan!', 'check-circle');
+            } else {
+                showToast('URL Webhook dikosongkan.', 'alert-circle');
+            }
+        }
+
+        function toggleScriptHelp() {
+            const helpBox = document.getElementById('box-script-help');
+            helpBox.classList.toggle('hidden');
+        }
+
+        // Helper to export submissions to CSV
+        function exportSubmissionsCSV() {
+            if (submissions.length === 0) {
+                showToast('Belum ada data pengumpulan untuk diekspor!', 'alert-circle');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,Kode Unik,Nama Siswa,Kelas,Nama Rumus,Bahasa,Waktu Pengumpulan,Kode Program\n";
+            submissions.forEach(s => {
+                const escapedCode = `"${s.kode_program.replace(/"/g, '""')}"`;
+                csvContent += `${s.kode_unik},"${s.nama_siswa}",${s.kelas},"${s.nama_rumus}",${s.bahasa},"${s.waktu}",${escapedCode}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Pengumpulan_Kode_Siswa.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('File CSV hasil pengumpulan berhasil diunduh!', 'check-circle');
+        }
+
+        // Utility: escape HTML string for preview
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Toast Notification System
+        function showToast(message, iconName = 'check-circle') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.textContent = message;
+            toastIcon.setAttribute('data-lucide', iconName);
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>

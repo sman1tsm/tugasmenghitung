@@ -43,7 +43,7 @@
                 </button>
                 <button id="btn-tab-guru" onclick="switchRole('guru')" class="px-4 py-1.5 text-sm font-medium rounded-lg transition-all flex items-center space-x-2 text-indigo-100 hover:text-white">
                     <i data-lucide="shield-check" class="w-4 h-4"></i>
-                    <span>Panel Guru</span>
+                    <span>.</span>
                 </button>
             </div>
         </div>
@@ -64,11 +64,11 @@
                 </div>
                 <div>
                     <h2 class="text-xl font-bold text-slate-900">Masukkan Kode Unik Anda</h2>
-                    <p class="text-sm text-slate-500 mt-1">Gunakan kode unik dari guru (contoh sampel: <code class="bg-slate-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono font-semibold">x5s</code>, <code class="bg-slate-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono font-semibold">x13s</code>, <code class="bg-slate-100 text-indigo-600 px-1.5 py-0.5 rounded font-mono font-semibold">x25s</code>)</p>
+                    <p class="text-sm text-slate-500 mt-1">Gunakan kode unik dari guru</p>
                 </div>
                 
                 <form onsubmit="cariTugasSiswa(event)" class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-2">
-                    <input type="text" id="input-kode-unik" placeholder="Contoh: x5s" required
+                    <input type="text" id="input-kode-unik" placeholder="" required
                         class="flex-1 px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-center text-lg uppercase tracking-wider outline-none transition">
                     <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-xl shadow-md shadow-indigo-200 transition flex items-center justify-center space-x-2">
                         <i data-lucide="search" class="w-5 h-5"></i>
@@ -384,7 +384,7 @@
         // =========================================================================
         // TEMPELKAN URL WEBHOOK GOOGLE SHEETS ANDA DI SISINI JIKA INGIN DI-HARDCODE:
         // =========================================================================
-        const HARDCODED_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwZ52o0rRtUeWChjn5XrhDs1JKvsN4mIxkCs9vc88htVmv1O0DTYBdUrRA2jZWEQ5N4Uw/exec"; // Contoh: "https://script.google.com/macros/s/AKfycb.../exec"
+        const HARDCODED_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxzTDjo8DiA14KIP5qMVlOZjye5w940PK37N_qWr6aiQWkD_ItSjaOqZ522rqqvyAZGQA/exec"; // Contoh: "https://script.google.com/macros/s/AKfycb.../exec"
 
         // Ambil dari LocalStorage atau fallback ke variabel HARDCODED_WEBHOOK_URL
         let webhookUrl = localStorage.getItem('edu_webhook_url') || HARDCODED_WEBHOOK_URL;
